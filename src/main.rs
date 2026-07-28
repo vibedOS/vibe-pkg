@@ -5,6 +5,7 @@
 
 use core::ffi::CStr;
 use core::panic::PanicInfo;
+use vibe_net::{Error as NetError, http_get};
 use vibe_pkg::{MAX_PACKAGE_LENGTH, Package, parse, valid_name};
 use vibe_rt::{
     Args, Env, Errno, Result, close, entry, eprintln, open_directory, open_read, open_write, print,
@@ -17,6 +18,7 @@ const TRUSTED_KEY: [u8; 32] = [
 ];
 const INSTALL_TEMP: &CStr = c"/bin/.vibe-pkg.tmp";
 const RECORD_TEMP: &CStr = c"/var/lib/vibe-pkg/.tmp";
+const REPOSITORY: &CStr = c"/etc/vibe-pkg/repository";
 
 entry!(main);
 
@@ -43,17 +45,24 @@ fn main(mut args: Args<'_>, _env: Env<'_>) -> i32 {
 }
 
 fn usage() -> Result<()> {
-    eprintln!("usage: vibe-pkg <install PACKAGE|upgrade PACKAGE|remove NAME|list>");
+    eprintln!("usage: vibe-pkg <install NAME|PACKAGE|upgrade NAME|PACKAGE|remove NAME|list>");
     Err(Errno(22))
 }
 
 fn install(argument: &[u8]) -> Result<()> {
-    let mut path_storage = [0_u8; 4096];
-    let path = c_path(argument, &mut path_storage).ok_or(Errno(36))?;
     // ponytail: fixed package memory keeps the guest allocator-free; raise the cap when packages outgrow 256 KiB.
     let mut bytes = [0_u8; MAX_PACKAGE_LENGTH];
-    let length = read_file(path, &mut bytes)?;
+    let length = if valid_name(argument) {
+        download_package(argument, &mut bytes)?
+    } else {
+        let mut path_storage = [0_u8; 4096];
+        let path = c_path(argument, &mut path_storage).ok_or(Errno(36))?;
+        read_file(path, &mut bytes)?
+    };
     let package = parse(&bytes[..length], &TRUSTED_KEY).map_err(|_| Errno(74))?;
+    if valid_name(argument) && package.name != argument {
+        return Err(Errno(74));
+    }
 
     let mut target_storage = [0_u8; 64];
     let target = c_path(package.path, &mut target_storage).ok_or(Errno(36))?;
@@ -71,6 +80,39 @@ fn install(argument: &[u8]) -> Result<()> {
 
     print_package("installed", package);
     Ok(())
+}
+
+fn download_package(name: &[u8], bytes: &mut [u8]) -> Result<usize> {
+    let mut repository = [0_u8; 512];
+    let length = read_file(REPOSITORY, &mut repository)?;
+    let repository = trim_ascii(&repository[..length]);
+    if repository.is_empty() {
+        return Err(Errno(22));
+    }
+
+    let mut url = [0_u8; 512];
+    let separator = usize::from(!repository.ends_with(b"/"));
+    let length = repository
+        .len()
+        .checked_add(separator)
+        .and_then(|length| length.checked_add(name.len()))
+        .and_then(|length| length.checked_add(5))
+        .filter(|length| *length <= url.len())
+        .ok_or(Errno(36))?;
+    let mut offset = repository.len();
+    url[..offset].copy_from_slice(repository);
+    if separator == 1 {
+        url[offset] = b'/';
+        offset += 1;
+    }
+    url[offset..offset + name.len()].copy_from_slice(name);
+    offset += name.len();
+    url[offset..length].copy_from_slice(b".vpkg");
+
+    vibe_rt::print!("fetching ");
+    let _ = write_all(1, name);
+    vibe_rt::println!();
+    http_get(&url[..length], bytes).map_err(net_error)
 }
 
 fn remove(name: &[u8]) -> Result<()> {
@@ -205,6 +247,26 @@ fn c_path<'a>(value: &[u8], storage: &'a mut [u8]) -> Option<&'a CStr> {
     storage[..value.len()].copy_from_slice(value);
     storage[value.len()] = 0;
     CStr::from_bytes_with_nul(&storage[..=value.len()]).ok()
+}
+
+fn trim_ascii(mut value: &[u8]) -> &[u8] {
+    while value.first().is_some_and(u8::is_ascii_whitespace) {
+        value = &value[1..];
+    }
+    while value.last().is_some_and(u8::is_ascii_whitespace) {
+        value = &value[..value.len() - 1];
+    }
+    value
+}
+
+fn net_error(error: NetError) -> Errno {
+    match error {
+        NetError::Io(error) => error,
+        NetError::TooLarge => Errno(27),
+        NetError::InvalidUrl | NetError::InvalidHost => Errno(22),
+        NetError::NameNotFound => Errno(2),
+        NetError::DnsResponse | NetError::HttpResponse | NetError::HttpStatus(_) => Errno(74),
+    }
 }
 
 fn print_package(action: &str, package: Package<'_>) {

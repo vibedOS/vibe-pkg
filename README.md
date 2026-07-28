@@ -12,8 +12,8 @@ Packages are capped at 256 KiB so verification remains allocator-free.
 ## Guest commands
 
 ```text
-vibe-pkg install PACKAGE
-vibe-pkg upgrade PACKAGE
+vibe-pkg install NAME|PACKAGE
+vibe-pkg upgrade NAME|PACKAGE
 vibe-pkg remove NAME
 vibe-pkg list
 ```
@@ -21,6 +21,11 @@ vibe-pkg list
 Install and upgrade stage the executable in `/bin`, set mode `0755`, call
 `fsync`, and atomically rename it into place. Package records use the same
 pattern in `/var/lib/vibe-pkg`.
+
+A valid package name downloads `NAME.vpkg` from the HTTP URL stored in
+`/etc/vibe-pkg/repository`. Arguments containing a path or filename extension
+remain local package files. The downloaded package signature and embedded name
+must both match before installation.
 
 ## Build packages
 
@@ -54,8 +59,7 @@ statically linked and does not use libc.
 ## Current scope
 
 The v1 format intentionally installs one `/bin` executable per package.
-Dependencies, remote repositories, multiple files, and key rotation are not
-implemented yet.
+Dependencies, HTTPS, multiple files, and key rotation are not implemented yet.
 
 ## License
 

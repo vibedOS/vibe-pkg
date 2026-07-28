@@ -6,7 +6,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
-use vibe_pkg::{MAGIC, MAX_PACKAGE_LENGTH, SIGNATURE_LENGTH, valid_name, valid_version};
+use vibe_pkg::{MAGIC, MAX_PACKAGE_LENGTH, SIGNATURE_LENGTH, parse, valid_name, valid_version};
 
 fn main() {
     if let Err(error) = run() {
@@ -44,13 +44,21 @@ fn run() -> Result<(), String> {
                 Path::new(&output),
             )
         }
+        Some(command) if command == "verify" => {
+            let public = args.next().ok_or_else(usage)?;
+            let package = args.next().ok_or_else(usage)?;
+            let payload = args.next().ok_or_else(usage)?;
+            if args.next().is_some() {
+                return Err(usage());
+            }
+            verify(Path::new(&public), Path::new(&package), Path::new(&payload))
+        }
         _ => Err(usage()),
     }
 }
 
 fn usage() -> String {
-    "usage: vibe-pkg-build <keygen PRIVATE PUBLIC|pack PRIVATE NAME VERSION PAYLOAD OUTPUT>"
-        .to_owned()
+    "usage: vibe-pkg-build <keygen PRIVATE PUBLIC|pack PRIVATE NAME VERSION PAYLOAD OUTPUT|verify PUBLIC PACKAGE PAYLOAD>".to_owned()
 }
 
 fn keygen(private: &Path, public: &Path) -> Result<(), String> {
@@ -98,6 +106,22 @@ fn pack(
     package.extend_from_slice(&payload);
     package.extend_from_slice(&signing_key.sign(&package).to_bytes());
     write_atomic(output, &package)
+}
+
+fn verify(public: &Path, package: &Path, payload: &Path) -> Result<(), String> {
+    let public = decode_key(&fs::read_to_string(public).map_err(|error| error.to_string())?)?;
+    let bytes = fs::read(package).map_err(|error| error.to_string())?;
+    let package = parse(&bytes, &public).map_err(|error| format!("invalid package: {error:?}"))?;
+    let expected = fs::read(payload).map_err(|error| error.to_string())?;
+    if package.payload != expected {
+        return Err("signed payload differs from the supplied build".to_owned());
+    }
+    println!(
+        "verified {} {}",
+        std::str::from_utf8(package.name).map_err(|_| "invalid package name")?,
+        std::str::from_utf8(package.version).map_err(|_| "invalid package version")?
+    );
+    Ok(())
 }
 
 fn decode_key(value: &str) -> Result<[u8; 32], String> {

@@ -14,3 +14,10 @@ jobs:
       - uses: actions/checkout@v6
       - run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
       - run: make check
+      - run: |
+          make builder
+          package_test=$(mktemp -d)
+          printf 'payload' > "$package_test/payload"
+          target/release/vibe-pkg-build keygen "$package_test/private" "$package_test/public"
+          target/release/vibe-pkg-build pack "$package_test/private" test-package 1.0.0 "$package_test/payload" "$package_test/test.vpkg"
+          target/release/vibe-pkg-build verify "$package_test/public" "$package_test/test.vpkg" "$package_test/payload"

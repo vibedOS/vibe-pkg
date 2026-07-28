@@ -30,6 +30,7 @@ The repository includes a host-side builder:
 make builder
 target/release/vibe-pkg-build keygen private.key public.key
 target/release/vibe-pkg-build pack private.key vibe-hello 0.1.0 ./vibe-hello ./vibe-hello.vpkg
+target/release/vibe-pkg-build verify public.key ./vibe-hello.vpkg ./vibe-hello
 ```
 
 Keep `private.key` outside source control. The corresponding public key must

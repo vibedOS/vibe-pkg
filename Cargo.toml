@@ -1,0 +1,37 @@
+[package]
+name = "vibe-pkg"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+license = "MIT"
+description = "The signed package manager for vibeOS"
+repository = "https://github.com/vibedOS/vibe-pkg"
+autobins = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "vibe-pkg"
+path = "src/main.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "vibe-pkg-build"
+path = "src/bin/vibe-pkg-build.rs"
+required-features = ["builder"]
+
+[features]
+builder = []
+
+[dependencies]
+ed25519-dalek = { version = "2.2.0", default-features = false, features = ["fast"] }
+vibe-rt = { git = "https://github.com/vibedOS/vibe-rt", rev = "f4b9ce3a3d44ea4a25de9dbe05389199f3ff70bb" }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+strip = "symbols"

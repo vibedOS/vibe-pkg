@@ -33,6 +33,8 @@ target/release/vibe-pkg-build pack private.key vibe-hello 0.1.0 ./vibe-hello ./v
 target/release/vibe-pkg-build verify public.key ./vibe-hello.vpkg ./vibe-hello
 ```
 
+Omit the final payload argument to verify only the package format and signature.
+
 Keep `private.key` outside source control. The corresponding public key must
 be compiled into `vibe-pkg` as its trust root.
 

@@ -18,9 +18,9 @@ vibe-pkg remove NAME
 vibe-pkg list
 ```
 
-Install and upgrade stage the executable in `/tmp`, set mode `0755`, call
-`fsync`, and atomically rename it into `/bin`. Package records live in
-`/var/lib/vibe-pkg`.
+Install and upgrade stage the executable in `/bin`, set mode `0755`, call
+`fsync`, and atomically rename it into place. Package records use the same
+pattern in `/var/lib/vibe-pkg`.
 
 ## Build packages
 

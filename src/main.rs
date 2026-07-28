@@ -15,8 +15,8 @@ const TRUSTED_KEY: [u8; 32] = [
     0x78, 0xd7, 0x04, 0x08, 0x69, 0x84, 0xff, 0x68, 0x84, 0x08, 0x0a, 0x24, 0x6c, 0x61, 0x30, 0x31,
     0x2d, 0x2e, 0x63, 0x82, 0xff, 0xbf, 0x9f, 0xa8, 0x4e, 0xb4, 0x4c, 0xb6, 0x19, 0xca, 0x7d, 0xf3,
 ];
-const INSTALL_TEMP: &CStr = c"/tmp/vibe-pkg-install.tmp";
-const RECORD_TEMP: &CStr = c"/tmp/vibe-pkg-record.tmp";
+const INSTALL_TEMP: &CStr = c"/bin/.vibe-pkg.tmp";
+const RECORD_TEMP: &CStr = c"/var/lib/vibe-pkg/.tmp";
 
 entry!(main);
 
@@ -43,7 +43,7 @@ fn main(mut args: Args<'_>, _env: Env<'_>) -> i32 {
 }
 
 fn usage() -> Result<()> {
-    eprintln!("usage: vibe-pkg <install|upgrade PACKAGE|remove NAME|list>");
+    eprintln!("usage: vibe-pkg <install PACKAGE|upgrade PACKAGE|remove NAME|list>");
     Err(Errno(22))
 }
 

@@ -201,14 +201,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
+name = "vibe-net"
+version = "0.1.0"
+source = "git+https://github.com/vibedOS/vibe-net?rev=add7630834acfacb404640279a74dfd8f36a4923#add7630834acfacb404640279a74dfd8f36a4923"
+dependencies = [
+ "vibe-rt",
+]
+
+[[package]]
 name = "vibe-pkg"
 version = "0.1.0"
 dependencies = [
  "ed25519-dalek",
+ "vibe-net",
  "vibe-rt",
 ]
 
 [[package]]
 name = "vibe-rt"
 version = "0.1.0"
-source = "git+https://github.com/vibedOS/vibe-rt?rev=f4b9ce3a3d44ea4a25de9dbe05389199f3ff70bb#f4b9ce3a3d44ea4a25de9dbe05389199f3ff70bb"
+source = "git+https://github.com/vibedOS/vibe-rt?rev=a410593afbf1b6047a1cea3a47f2aa30d61a9466#a410593afbf1b6047a1cea3a47f2aa30d61a9466"

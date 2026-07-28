@@ -27,7 +27,8 @@ builder = []
 
 [dependencies]
 ed25519-dalek = { version = "2.2.0", default-features = false, features = ["fast"] }
-vibe-rt = { git = "https://github.com/vibedOS/vibe-rt", rev = "f4b9ce3a3d44ea4a25de9dbe05389199f3ff70bb" }
+vibe-net = { git = "https://github.com/vibedOS/vibe-net", rev = "add7630834acfacb404640279a74dfd8f36a4923" }
+vibe-rt = { git = "https://github.com/vibedOS/vibe-rt", rev = "a410593afbf1b6047a1cea3a47f2aa30d61a9466" }
 
 [profile.dev]
 panic = "abort"
